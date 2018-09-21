@@ -50,12 +50,6 @@ def checkParams(parameters):
             print("""Invalid parameter for len,
                 default will be used instead: {}""").format(NSEQ)
             parameters.nseq = NSEQ
-    
-
-    if parameters.out is None:
-        print("""No parameter for --out,
-                default will be used instead: {}""").format(OUT)
-        parameters.out = OUT
         
     return parameters
 
