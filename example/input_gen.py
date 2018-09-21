@@ -27,11 +27,6 @@ def params():
                                 required = False,
                                 default = NSEQ,
                                 help = "Number of couple of sequences")
-    obj_parse_args.add_argument("-o", "--out",
-                                type = str,
-                                required = False,
-                                default = OUT,
-                                help = "output file")
 
     args = obj_parse_args.parse_args()
 
