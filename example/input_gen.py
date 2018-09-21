@@ -9,7 +9,6 @@ import random as rnd
 # Default params ---------------------------------------------------------------
 
 NSEQ = 1
-OUT = "Random_test_seqs.txt"
 
 # Input params -----------------------------------------------------------------
 
@@ -85,7 +84,4 @@ if __name__ == "__main__":
         if i > 0:
             out_seqs[0] = "\n" + out_seqs[0]
             
-        PrintOut(out_seqs, args.out)
-        
-if not os.path.isfile(OUT):
-    print("No output file created")
+        PrintOut(out_seqs, "./random_seqs.txt")
