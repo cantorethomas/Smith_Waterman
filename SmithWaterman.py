@@ -140,19 +140,19 @@ def CreateSD(matrix):
     return sd, scores
                 
 # Check Events #
-def checkEvents(pos, matrix):
+def checkEvents(pos, matrix, sim, G):
     """ checks the max val for gap or mm from current pos.
         Stores data in a composed by three vals:
         1) Score inside of matrix
         2) Position considered
         3) Type of event """
-    
-    g1 = [matrix[pos[0]-1][pos[1]], [pos[0]-1, pos[1]], "G1"]
-    g2 = [matrix[pos[0]][pos[1]-1], [pos[0], pos[1]-1], "G2"]
-    mm = [matrix[pos[0]-1][pos[1]-1], [pos[0]-1, pos[1]-1], "MI"]
 
-    dict_moves = {g1[0]:g1[1:], g2[0]:g2[1:], mm[0]:mm[1:]}
-    max_move = max(dict_moves) # if want to implement bifurcation, start here
+    dict_moves = {
+        matrix[pos[0]-1][pos[1]] + G : [[pos[0]-1, pos[1]], "G1"],
+        matrix[pos[0]][pos[1]-1] + G : [[pos[0], pos[1]-1], "G2"],
+        matrix[pos[0]-1][pos[1]-1] + sim: [[pos[0]-1, pos[1]-1], "M"]
+    }
+    max_move = max(dict_moves.keys()) # if want to implement diversification, start here
 
     next_pos = dict_moves[max_move][0]
     event = dict_moves[max_move][1]
@@ -173,6 +173,7 @@ def ConstructMatrix(str1, str2, M, MM, G):
     ls1 = len(str1)
     ls2 = len(str2)
     matrix = [[0]*(ls2+1) for i in range(ls1+1)]
+    sim = 0
 
     # filling the matrix
     
@@ -180,19 +181,20 @@ def ConstructMatrix(str1, str2, M, MM, G):
         for j in range(1,ls2+1):
             
             if str1[i-1] == str2[j-1]:
-                matrix[i][j] = (matrix[i-1][j-1] + M)
-                
+                sim = M # similarity function
             else:
-                g1 = matrix[i-1][j] + G
-                g2 = matrix[i][j-1] + G
-                mm = matrix[i-1][j-1] + MM
-                matrix[i][j] = max(g1,g2,mm,0)
+                sim = MM
+            
+            g1 = matrix[i-1][j] + G
+            g2 = matrix[i][j-1] + G
+            mm = matrix[i-1][j-1] + sim # match or mismatch
+            matrix[i][j] = max(g1,g2,mm,0)
 
     return matrix
     
 # Trace back of Matrix -----------------------------------------------------------------------------
 
-def TraceBack(matrix, str1, str2, pos):
+def TraceBack(matrix, str1, str2, pos, M, MM, G):
     """ Trace back function from max val to 0: prints all possible
         aligments, considering every different starting point """
         
@@ -205,32 +207,34 @@ def TraceBack(matrix, str1, str2, pos):
     while pos_val != 0:
         base1 = str1[pos[0]-1]
         base2 = str2[pos[1]-1]
-
-        if base1 == base2: #If same base, calls for match 
-            events = "|" + events
-            stru = base1 + stru
-            strd = base2 + strd
-
-            pos = [pos[0]-1, pos[1]-1]
-
+        
+        if base1 == base2:
+            sim = M
         else:
-            pos, tmp_event = checkEvents(pos, matrix)
+            sim = MM
 
-            if tmp_event == "G1":
+        pos, tmp_event = checkEvents(pos, matrix, sim, G)
+
+        if tmp_event == "G1":
                 stru = base1 + stru
                 strd = "-" + strd
                 events = " " + events
                 
-            elif tmp_event == "G2":
-                stru = "-" + stru
-                strd = base2 + strd
-                events = " " + events
+        elif tmp_event == "G2":
+            stru = "-" + stru
+            strd = base2 + strd
+            events = " " + events
                 
+        else:
+            if sim == M:
+                stru = base1 + stru
+                strd = base2 + strd
+                events = "|" + events
             else:
                 stru = base1 + stru
                 strd = base2 + strd
                 events = ":" + events
-        
+
         pos_val = matrix[pos[0]][pos[1]]
 
     return(stru, strd, events)
@@ -254,7 +258,7 @@ if __name__ == "__main__":
             pos, score = findMax(matrix)
             
             if ((args.minscore == None) or (args.minscore <= score)):
-                stru, strd, events = TraceBack(matrix, str1, str2, pos)
+                stru, strd, events = TraceBack(matrix, str1, str2, pos, args.match, args.mismatch, args.gap)
                 
                 if ((args.minlength == None) or (args.minlength <= len(stru))):
                     print("SCORE: {}\n{}\n{}\n{}\n\n".format(score, stru, "".join(events), strd))
@@ -291,18 +295,12 @@ if __name__ == "__main__":
                 score = matrix[pos[0]][pos[1]]
 
                 if ((args.minscore == None) or (args.minscore <= score)):
-                    stru, strd, events = TraceBack(matrix, str1, str2, pos)
+                    stru, strd, events = TraceBack(matrix, str1, str2, pos, args.match, args.mismatch, args.gap)
                 
                     if ((args.minlength == None) or (args.minlength <= len(stru))):
                         print("\nSCORE: {}\n{}\n{}\n{}".format(score, stru, "".join(events), strd))
                         tot_print += 1
 
-# SOME NOTES FOR FUTURE USES #
-# The algorithm was planned to work divided mainly into Score Matrix creation and Trace Back.
-# If in input just one sequence is required, the accessory function findMax() is used. Else,
-# A score_dictionary object is created through specific function and only the higher requsted
-# positions are used to call iteratively traceback. The last part works on calling the program
-# depending on which restrictions are used and print out (restrictions: --minlength, --minscore)
                 
                 
                 
